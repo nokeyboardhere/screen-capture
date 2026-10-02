@@ -1,0 +1,9 @@
+{
+    "regions": [
+        {
+            "name": "Example region",
+            "top_left": [100, 100],
+            "bottom_right": [800, 600]
+        }
+    ]
+}

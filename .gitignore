@@ -1,0 +1,21 @@
+# Vim
+*.swp
+*.swo
+
+# Backup files
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+virtualenv/
+
+# Generated screenshots
+captures/
+
+# Local configuration
+config.json
