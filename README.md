@@ -9,6 +9,9 @@ A small Windows utility for capturing predefined screen regions.
 - Copy a selected region directly to the clipboard.
 - Save a selected region as a JPG.
 - Change the active region and capture mode without restarting.
+- Toggle region visualisation on and off while running.
+- Visualisation follows the active region when it changes.
+- Visualisation is hidden during capture so it is not included in screenshots.
 - Supports single and multiple monitors.
 
 ## Setup
@@ -36,7 +39,19 @@ Run:
 
     python capture.py
 
-Choose a region and capture mode, then capture repeatedly without restarting.
+At startup, choose:
+
+1. Region
+2. Capture mode
+3. Whether to visualise the selected region
+
+While running, you can:
+
+1. Capture
+2. Change region
+3. Change capture mode
+4. Toggle visualisation
+5. Quit
 
 JPG files are saved to the `captures/` directory.
 

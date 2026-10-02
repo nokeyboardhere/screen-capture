@@ -161,6 +161,14 @@ def run_overlay(connection):
             if command[0] == "update":
                 update_overlay(command[1])
 
+            elif command[0] == "hide":
+                root.withdraw()
+                connection.send(("hidden",))
+
+            if command[0] == "show":
+                root.deiconify()
+                connection.send(("shown",))
+
             elif command[0] == "close":
                 root.destroy()
                 return
@@ -193,6 +201,26 @@ class OverlayController:
         if self.connection is not None:
             self.connection.send(("update", region))
 
+    def hide(self):
+        if self.connection is None:
+            return
+
+        self.connection.send(("hide",))
+
+        while self.connection.recv() != ("hidden",):
+            pass
+
+
+    def show(self, region):
+        if self.connection is None:
+            return
+
+        self.connection.send(("update", region))
+        self.connection.send(("show",))
+
+        while self.connection.recv() != ("shown",):
+            pass
+
     def stop(self):
         if self.connection is not None:
             try:
@@ -210,14 +238,21 @@ class OverlayController:
         self.process = None
 
 
-def capture(region, action):
-    image, virtual_screen = take_screenshot()
-    image = crop_region(image, virtual_screen, region)
+def capture(region, action, overlay=None, visualise=False):
+    if visualise:
+        overlay.hide()
 
-    if action == "clipboard":
-        copy_to_clipboard(image)
-    elif action == "jpg":
-        save_as_jpg(image)
+    try:
+        image, virtual_screen = take_screenshot()
+        image = crop_region(image, virtual_screen, region)
+
+        if action == "clipboard":
+            copy_to_clipboard(image)
+        elif action == "jpg":
+            save_as_jpg(image)
+    finally:
+        if visualise:
+            overlay.show(region)
 
 
 def main():
@@ -264,7 +299,7 @@ def main():
             choice = input("\nChoose an option: ").strip()
 
             if choice == "1":
-                capture(region, action)
+                capture(region, action, overlay, visualise)
 
             elif choice == "2":
                 new_region = choose_region(config)
