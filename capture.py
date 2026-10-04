@@ -3,6 +3,8 @@ import multiprocessing
 import tkinter as tk
 from pathlib import Path
 
+from pynput import keyboard
+
 
 CONFIG_FILE = "config.json"
 OUTPUT_DIRECTORY = Path("captures")
@@ -255,6 +257,104 @@ def capture(region, action, overlay=None, visualise=False):
             overlay.show(region)
 
 
+def fine_tune_region(region, overlay):
+    offset_x = 0
+    offset_y = 0
+    original_region = region.copy()
+
+    def move(dx, dy):
+        nonlocal offset_x, offset_y
+
+        offset_x += dx
+        offset_y += dy
+
+        region["top_left"][0] += dx
+        region["top_left"][1] += dy
+        region["bottom_right"][0] += dx
+        region["bottom_right"][1] += dy
+
+        overlay.update(region)
+
+        print(
+            f"\rOffset: X {offset_x:+d}, Y {offset_y:+d}",
+            end="",
+            flush=True,
+        )
+
+    def reset():
+        nonlocal offset_x, offset_y
+
+        region["top_left"] = original_region["top_left"].copy()
+        region["bottom_right"] = original_region["bottom_right"].copy()
+
+        offset_x = 0
+        offset_y = 0
+
+        overlay.update(region)
+
+        print("\rOffset: X +0, Y +0", end="", flush=True)
+
+    print("\n--- Fine-tune region ---")
+    print("Arrow keys: move 1 pixel")
+    print("Shift + arrow: move 10 pixels")
+    print("R: reset")
+    print("Enter: accept")
+    print("Esc: cancel")
+
+    current_keys = set()
+    finished = False
+    cancelled = False
+
+    def on_press(key):
+        nonlocal finished, cancelled
+
+        current_keys.add(key)
+
+        if key == keyboard.Key.enter:
+            finished = True
+            return False
+
+        if key == keyboard.Key.esc:
+            cancelled = True
+            return False
+
+        step = 10 if (
+            keyboard.Key.shift in current_keys
+            or keyboard.Key.shift_l in current_keys
+            or keyboard.Key.shift_r in current_keys
+        ) else 1
+
+        if key == keyboard.Key.up:
+            move(0, -step)
+        elif key == keyboard.Key.down:
+            move(0, step)
+        elif key == keyboard.Key.left:
+            move(-step, 0)
+        elif key == keyboard.Key.right:
+            move(step, 0)
+        elif key == keyboard.KeyCode.from_char("r"):
+            reset()
+
+    def on_release(key):
+        current_keys.discard(key)
+
+    with keyboard.Listener(
+        on_press=on_press,
+        on_release=on_release,
+    ) as listener:
+        listener.join()
+
+    if cancelled:
+        region["top_left"] = original_region["top_left"]
+        region["bottom_right"] = original_region["bottom_right"]
+        overlay.update(region)
+        print("\nCancelled.")
+    else:
+        print("\nAdjustment accepted.")
+
+    return region
+
+
 def main():
     config = load_config()
     overlay = OverlayController()
@@ -294,7 +394,8 @@ def main():
             print("2. Change region")
             print("3. Change action")
             print("4. Toggle visualisation")
-            print("5. Quit")
+            print("5. Fine-tune region")
+            print("6. Quit")
 
             choice = input("\nChoose an option: ").strip()
 
@@ -325,6 +426,12 @@ def main():
                     overlay.stop()
 
             elif choice == "5":
+                if visualise:
+                    fine_tune_region(region, overlay)
+                else:
+                    print("Turn on visualisation first.")
+                    
+            elif choice == "6":
                 print("Goodbye.")
                 break
 

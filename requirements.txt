@@ -2,3 +2,4 @@ mouse
 mss
 Pillow
 pyperclipimg
+pynput

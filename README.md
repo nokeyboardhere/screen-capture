@@ -12,6 +12,7 @@ A small Windows utility for capturing predefined screen regions.
 - Toggle region visualisation on and off while running.
 - Visualisation follows the active region when it changes.
 - Visualisation is hidden during capture so it is not included in screenshots.
+- Temporarily fine-tune the active region by moving it pixel-by-pixel.
 - Supports single and multiple monitors.
 
 ## Setup
@@ -51,7 +52,22 @@ While running, you can:
 2. Change region
 3. Change capture mode
 4. Toggle visualisation
-5. Quit
+5. Fine-tune region
+6. Quit
+
+### Fine-tuning
+
+Fine-tuning temporarily moves the active region without changing its saved configuration.
+
+During fine-tuning:
+
+- Arrow keys move the region by 1 pixel.
+- Shift + arrow keys attempt to move the region by 10 pixels.
+- `R` resets the temporary adjustment.
+- `Enter` accepts the adjustment.
+- `Esc` cancels the adjustment.
+
+The temporary adjustment is lost when `capture.py` exits.
 
 JPG files are saved to the `captures/` directory.
 
