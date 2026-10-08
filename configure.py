@@ -2,6 +2,7 @@ import json
 import tkinter as tk
 
 import mouse
+from pynput import keyboard
 
 
 CONFIG_FILE = "config.json"
@@ -166,12 +167,123 @@ def visualise_region(config):
     def close_overlay(event=None):
         root.destroy()
 
-    root.bind_all("<Return>", close_overlay)
-    root.bind_all("<Escape>", close_overlay)
+    root.bind("<Return>", close_overlay)
+    root.bind("<Escape>", close_overlay)
 
     root.after(100, root.focus_force)
     root.after(500, root.focus_force)
+    root.after(1000, root.focus_force)
     root.mainloop()
+
+
+def adjust_region(config):
+    region = choose_region(config)
+
+    if region is None:
+        return
+
+    original_top_left = region["top_left"].copy()
+    original_bottom_right = region["bottom_right"].copy()
+    cancelled = False
+
+    print("\n--- Adjust region ---")
+    print("Arrow keys: move region 1 pixel")
+    print("W / S: increase / decrease height")
+    print("A / D: decrease / increase width")
+    print("Enter: save")
+    print("Esc: cancel")
+
+    def show_status():
+        x = region["top_left"][0]
+        y = region["top_left"][1]
+
+        width = region["bottom_right"][0] - x
+        height = region["bottom_right"][1] - y
+
+        print(
+            f"\rPosition: X {x}, Y {y} | "
+            f"Size: {width} x {height}",
+            end="",
+            flush=True,
+        )
+
+    def move(dx, dy):
+        region["top_left"][0] += dx
+        region["top_left"][1] += dy
+        region["bottom_right"][0] += dx
+        region["bottom_right"][1] += dy
+
+        show_status()
+
+    def resize(dw, dh):
+        new_width = (
+            region["bottom_right"][0]
+            - region["top_left"][0]
+            + dw
+        )
+
+        new_height = (
+            region["bottom_right"][1]
+            - region["top_left"][1]
+            + dh
+        )
+
+        if new_width < 1 or new_height < 1:
+            return
+
+        region["bottom_right"][0] += dw
+        region["bottom_right"][1] += dh
+
+        show_status()
+
+    def on_press(key):
+        nonlocal cancelled
+
+        if key == keyboard.Key.enter:
+            return False
+
+        if key == keyboard.Key.esc:
+            cancelled = True
+            return False
+
+        if key == keyboard.Key.up:
+            move(0, -1)
+
+        elif key == keyboard.Key.down:
+            move(0, 1)
+
+        elif key == keyboard.Key.left:
+            move(-1, 0)
+
+        elif key == keyboard.Key.right:
+            move(1, 0)
+
+        elif key == keyboard.KeyCode.from_char("w"):
+            resize(0, 1)
+
+        elif key == keyboard.KeyCode.from_char("s"):
+            resize(0, -1)
+
+        elif key == keyboard.KeyCode.from_char("a"):
+            resize(-1, 0)
+
+        elif key == keyboard.KeyCode.from_char("d"):
+            resize(1, 0)
+
+    print()
+    show_status()
+
+    with keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
+
+    if cancelled:
+        region["top_left"] = original_top_left
+        region["bottom_right"] = original_bottom_right
+        print("\nAdjustment cancelled.")
+        return
+
+    save_config(config)
+    print("\nAdjustment saved.")
 
 
 def list_regions(config):
@@ -197,8 +309,9 @@ def main():
         print("2. Edit region")
         print("3. Delete region")
         print("4. Visualise region")
-        print("5. List regions")
-        print("6. Quit")
+        print("5. Adjust region")
+        print("6. List regions")
+        print("7. Quit")
 
         choice = input("\nChoose an option: ").strip()
 
@@ -211,8 +324,10 @@ def main():
         elif choice == "4":
             visualise_region(config)
         elif choice == "5":
-            list_regions(config)
+            adjust_region(config)
         elif choice == "6":
+            list_regions(config)
+        elif choice == "7":
             print("Goodbye.")
             break
         else:
